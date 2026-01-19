@@ -1,0 +1,81 @@
+---
+import { type CollectionEntry, getCollection } from 'astro:content';
+import Layout from '../../../layouts/Layout.astro';
+import { useTranslations } from '../../../i18n/utils';
+
+export async function getStaticPaths() {
+	const posts = await getCollection('blog');
+	return posts.map((post) => {
+		const [lang, ...slugParts] = post.slug.split('/');
+        const slug = slugParts.join('/');
+		return {
+			params: { lang, slug },
+			props: { post },
+		};
+	});
+}
+
+interface Props {
+	post: CollectionEntry<'blog'>;
+}
+
+const { post } = Astro.props;
+const { lang } = Astro.params;
+const { Content } = await post.render();
+const t = useTranslations(lang as any);
+
+// Check if translation exists
+const otherLang = lang === 'en' ? 'zh' : 'en';
+// Assuming slug structure is consistent: lang/slug-name
+const slugName = post.slug.split('/').slice(1).join('/');
+const allPosts = await getCollection('blog');
+const translatedPost = allPosts.find(p => p.slug === `${otherLang}/${slugName}`);
+
+---
+
+<Layout title={post.data.title} lang={lang}>
+    <nav class="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto border-b border-slate-100">
+		<div class="text-2xl font-bold flex items-center gap-2">
+            <a href={`/${lang}`} class="text-slate-900 no-underline">P.</a>
+		</div>
+        <div class="flex items-center gap-6">
+             <a href={`/${lang}/blog`} class="text-slate-600 hover:text-primary transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                {t('nav.blog')}
+             </a>
+             
+             {translatedPost ? (
+                <a href={`/${otherLang}/blog/${slugName}`} class="text-sm font-medium text-primary border border-primary px-3 py-1 rounded-full hover:bg-primary hover:text-white transition-colors">
+                    Read in {otherLang === 'en' ? 'English' : '中文'}
+                </a>
+             ) : (
+                <span class="text-xs text-slate-400 cursor-help" title="Translation not available">
+                    {otherLang === 'en' ? 'English' : '中文'} n/a
+                </span>
+             )}
+        </div>
+    </nav>
+
+	<main class="max-w-3xl mx-auto px-8 py-12">
+        <article class="prose prose-slate prose-lg max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-p:text-slate-600 prose-a:text-primary">
+            <div class="mb-8 text-center">
+                <div class="text-sm text-slate-500 mb-2">
+                    {post.data.pubDate.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </div>
+                <h1 class="text-3xl md:text-5xl font-bold text-slate-900 mb-4 leading-tight">{post.data.title}</h1>
+                <p class="text-xl text-slate-500 font-light">{post.data.description}</p>
+            </div>
+            
+            {post.data.heroImage && (
+                <div class="rounded-2xl overflow-hidden bg-slate-100 mb-12 aspect-video flex items-center justify-center text-slate-400">
+                    {/* <img src={post.data.heroImage} alt="" class="w-full h-full object-cover" /> */}
+                    Hero Image
+                </div>
+            )}
+
+            <div class="mt-8">
+                <Content />
+            </div>
+        </article>
+	</main>
+</Layout>

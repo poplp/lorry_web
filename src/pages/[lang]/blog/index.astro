@@ -1,0 +1,78 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+import { useTranslations } from '../../../i18n/utils';
+
+export async function getStaticPaths() {
+  return [
+    { params: { lang: 'en' } },
+    { params: { lang: 'zh' } },
+  ];
+}
+
+const { lang } = Astro.params;
+const t = useTranslations(lang as any);
+
+const posts = (await getCollection('blog'))
+    .filter((post) => post.slug.startsWith(`${lang}/`))
+    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+function formatPubDate(date: Date) {
+    return date.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+}
+---
+
+<Layout title={`Blog | Mahmood Fazile`} lang={lang}>
+	<nav class="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
+		<div class="text-2xl font-bold flex items-center gap-2">
+            <a href={`/${lang}`} class="text-slate-900 no-underline">P.</a>
+		</div>
+        <div class="flex gap-4">
+             <a href={`/${lang}`} class="text-slate-600 hover:text-primary transition-colors">{t('nav.home')}</a>
+             <a href={`/${lang}/blog`} class="text-primary font-semibold">{t('nav.blog')}</a>
+        </div>
+    </nav>
+
+	<main class="max-w-4xl mx-auto px-8 py-12">
+        <h1 class="text-4xl font-bold text-slate-900 mb-12">{t('nav.blog')}</h1>
+        
+		<section>
+			<ul class="space-y-8">
+				{
+					posts.map((post) => {
+                        // Remove lang prefix from slug for URL
+                        const slug = post.slug.split('/').slice(1).join('/');
+                        return (
+						<li class="group">
+							<a href={`/${lang}/blog/${slug}`} class="block">
+                                <div class="flex flex-col md:flex-row gap-6 items-start">
+                                    {post.data.heroImage && (
+                                        <div class="w-full md:w-48 aspect-video bg-slate-200 rounded-lg overflow-hidden shrink-0">
+                                            {/* <img width={720} height={360} src={post.data.heroImage} alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /> */}
+                                            <div class="w-full h-full flex items-center justify-center text-slate-400 bg-slate-100">Image</div>
+                                        </div>
+                                    )}
+                                    <div class="flex-1">
+                                        <h2 class="text-2xl font-bold text-slate-900 group-hover:text-primary transition-colors mb-2">
+                                            {post.data.title}
+                                        </h2>
+                                        <p class="text-slate-500 mb-2 text-sm">
+                                            {formatPubDate(post.data.pubDate)}
+                                        </p>
+                                        <p class="text-slate-600 line-clamp-2">
+                                            {post.data.description}
+                                        </p>
+                                    </div>
+                                </div>
+							</a>
+						</li>
+					)})
+				}
+			</ul>
+		</section>
+	</main>
+</Layout>
