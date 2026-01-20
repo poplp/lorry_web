@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import GoogleAnalytics from '../components/GoogleAnalytics.astro';
 
 interface Props {
 	title: string;
@@ -7,6 +8,7 @@ interface Props {
 }
 
 const { title, lang = 'en' } = Astro.props;
+const GA_ID = "G-XXXXXXXXXX"; // TODO: Replace with your actual Measurement ID
 ---
 
 <!doctype html>
@@ -22,6 +24,7 @@ const { title, lang = 'en' } = Astro.props;
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <GoogleAnalytics id={GA_ID} />
 	</head>
 	<body class="font-['Poppins'] bg-[#F8F8F8] text-slate-800">
 		<slot />

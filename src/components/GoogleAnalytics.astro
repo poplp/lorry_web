@@ -1,0 +1,23 @@
+<!-- Google Analytics Component -->
+<!-- 
+  Usage: 
+  Pass the measurementId prop.
+-->
+{
+  Astro.props.id && (
+    <>
+      <script
+        async
+        src={`https://www.googletagmanager.com/gtag/js?id=${Astro.props.id}`}
+      ></script>
+      <script define:vars={{ id: Astro.props.id }}>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+          dataLayer.push(arguments);
+        }
+        gtag("js", new Date());
+        gtag("config", id);
+      </script>
+    </>
+  )
+}
