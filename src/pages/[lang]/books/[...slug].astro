@@ -2,6 +2,7 @@
 import { type CollectionEntry, getCollection } from 'astro:content';
 import Layout from '../../../layouts/Layout.astro';
 import { useTranslations } from '../../../i18n/utils';
+import AntifragileLegend from '../../../components/AntifragileLegend.astro';
 
 export async function getStaticPaths() {
   const books = await getCollection('books');
@@ -133,6 +134,11 @@ const translatedBook = allBooks.find(p => p.slug === `${otherLang}/${slugName}`)
             <p class="text-sm text-slate-500 mt-2 text-center">
                 {lang === 'en' ? 'Interactive Canvas Animation' : '交互式 Canvas 动画演示'}
             </p>
+            {slugName === 'antifragile' && (
+                <div class="mt-8">
+                    <AntifragileLegend lang={lang as 'zh' | 'en'} />
+                </div>
+            )}
         </section>
 
         <!-- Practical Guidance -->
