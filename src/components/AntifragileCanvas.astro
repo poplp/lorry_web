@@ -35,25 +35,34 @@
         
         if (!canvas || !slider) return;
 
+        // Prevent double initialization on the same element
+        if ((canvas as any)._initialized) return;
+        (canvas as any)._initialized = true;
+
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
         let width = canvas.width = canvas.offsetWidth;
         let height = canvas.height = canvas.offsetHeight;
         let shockIntensity = parseInt(slider.value) / 100; // 0 to 1
+        let isRunning = true;
 
         // Event Listener
-        slider.addEventListener('input', (e) => {
+        const onInput = (e: Event) => {
             shockIntensity = parseInt((e.target as HTMLInputElement).value) / 100;
-        });
+        };
+        slider.addEventListener('input', onInput);
 
         // Resize
         const resizeObserver = new ResizeObserver(() => {
+            if (!canvas) return;
             width = canvas.width = canvas.offsetWidth;
             height = canvas.height = canvas.offsetHeight;
             initObjects();
         });
-        resizeObserver.observe(canvas.parentElement!);
+        if (canvas.parentElement) {
+            resizeObserver.observe(canvas.parentElement);
+        }
 
         // --- Game Objects ---
         
@@ -238,7 +247,16 @@
         }
 
         function draw() {
-            if (!ctx) return;
+            if (!ctx || !isRunning) return;
+            
+            // Check if canvas is still attached to DOM
+            if (!document.body.contains(canvas)) {
+                isRunning = false;
+                resizeObserver.disconnect();
+                slider.removeEventListener('input', onInput);
+                return;
+            }
+
             ctx.clearRect(0, 0, width, height);
 
             // Draw Shockwaves
@@ -347,11 +365,32 @@
             requestAnimationFrame(draw);
         }
 
-        setInterval(update, 1000/60);
+        // Loop
+        function loop() {
+            if (!isRunning) return;
+            update();
+            // Draw is self-looping via requestAnimationFrame
+        }
+        
+        // Start update loop
+        const updateInterval = setInterval(() => {
+            if (!isRunning) {
+                clearInterval(updateInterval);
+                return;
+            }
+            update();
+        }, 1000/60);
+
+        // Start draw loop
         draw();
     }
 
     // Run when DOM is ready or view transition completes
+    if (document.readyState !== 'loading') {
+        initAntifragileCanvas();
+    } else {
+        document.addEventListener('DOMContentLoaded', initAntifragileCanvas);
+    }
+    // Support Astro View Transitions if enabled in future
     document.addEventListener('astro:page-load', initAntifragileCanvas);
-    initAntifragileCanvas(); // Initial load
 </script>
