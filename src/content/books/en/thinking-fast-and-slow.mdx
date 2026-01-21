@@ -1,0 +1,27 @@
+---
+title: 'Thinking, Fast and Slow'
+author: 'Daniel Kahneman'
+description: 'The definitive book on how our mind works, exploring the two systems that drive the way we think.'
+pubDate: 2026-01-21
+coverImage: 'https://images.unsplash.com/photo-1555449372-525af0a19fb4?auto=format&fit=crop&q=80&w=600'
+coreIdea: 'Our brain operates on two systems: System 1 (Fast, Intuitive, Emotional) and System 2 (Slow, Deliberative, Logical). Understanding their interplay is key to making better decisions.'
+quotes:
+  - "Nothing in life is as important as you think it is, while you are thinking about it."
+  - "We can be blind to the obvious, and we are also blind to our blindness."
+  - "Intelligence is not only the ability to reason; it is also the ability to find relevant material in memory and to deploy attention when needed."
+practicalGuidance:
+  society: 'Recognize "Nudge" and framing effects. Policies can be designed to help the intuitive System 1 make better choices without restricting freedom.'
+  learning: 'Cognitive ease (feeling familiar) is not the same as truth. To truly learn, we must engage System 2 through deliberate, often uncomfortable, effort.'
+  work: 'Use the "Premortem" technique: Before a major decision, imagine it has failed a year later and write the history of that failure. This forces System 2 to overcome optimism bias.'
+---
+import SystemThinkingCanvas from '../../../components/SystemThinkingCanvas.astro';
+
+<div class="w-full h-full min-h-[350px] bg-slate-50 rounded-xl overflow-hidden relative">
+    <div class="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-red-500 shadow-sm">
+        System 1: Fast & Intuitive
+    </div>
+    <div class="absolute bottom-4 right-4 z-10 bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-blue-600 shadow-sm">
+        System 2: Slow & Analytical
+    </div>
+    <SystemThinkingCanvas />
+</div>

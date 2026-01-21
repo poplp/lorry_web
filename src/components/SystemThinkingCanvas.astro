@@ -1,0 +1,156 @@
+<canvas id="system-thinking-canvas" class="w-full h-full block"></canvas>
+
+<script>
+  function initSystemCanvas() {
+    const canvas = document.getElementById('system-thinking-canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = canvas.offsetWidth;
+    let height = canvas.offsetHeight;
+    
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+
+    // Node Types
+    // System 1: Fast, Intuitive (Small, Fast, Erratic, Warm Colors)
+    // System 2: Slow, Analytical (Large, Slow, Linear, Cool Colors)
+
+    class Node {
+        x: number;
+        y: number;
+        vx: number;
+        vy: number;
+        r: number;
+        type: 'sys1' | 'sys2';
+        color: string;
+        pulse: number;
+
+        constructor(type: 'sys1' | 'sys2') {
+            this.type = type;
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            
+            if (type === 'sys1') {
+                this.r = Math.random() * 3 + 2; // Small
+                this.vx = (Math.random() - 0.5) * 4; // Fast
+                this.vy = (Math.random() - 0.5) * 4;
+                this.color = `rgba(255, 99, 71, 0.7)`; // Tomato Red
+            } else {
+                this.r = Math.random() * 10 + 10; // Large
+                this.vx = (Math.random() - 0.5) * 0.5; // Slow
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.color = `rgba(65, 105, 225, 0.6)`; // Royal Blue
+            }
+            this.pulse = 0;
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Bounce
+            if (this.x < 0 || this.x > width) this.vx *= -1;
+            if (this.y < 0 || this.y > height) this.vy *= -1;
+
+            // System 1 erratic behavior
+            if (this.type === 'sys1' && Math.random() < 0.05) {
+                this.vx += (Math.random() - 0.5) * 2;
+                this.vy += (Math.random() - 0.5) * 2;
+                // Clamp speed
+                const speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+                if (speed > 5) { this.vx *= 0.8; this.vy *= 0.8; }
+            }
+
+            // Pulse effect
+            this.pulse += 0.05;
+        }
+
+        draw(ctx: CanvasRenderingContext2D) {
+            ctx.beginPath();
+            const pulsingR = this.r + Math.sin(this.pulse) * (this.type === 'sys1' ? 1 : 2);
+            ctx.arc(this.x, this.y, Math.max(0, pulsingR), 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            
+            // Label for System 2
+            if (this.type === 'sys2') {
+                ctx.fillStyle = 'white';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Sys 2', this.x, this.y);
+            }
+        }
+    }
+
+    const nodes: Node[] = [];
+    // Create nodes
+    for (let i = 0; i < 40; i++) nodes.push(new Node('sys1')); // Many System 1
+    for (let i = 0; i < 5; i++) nodes.push(new Node('sys2'));  // Few System 2
+
+    function animate() {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, width, height);
+      
+      // Update and Draw Nodes
+      nodes.forEach(node => {
+        node.update();
+        node.draw(ctx);
+      });
+
+      // Draw Connections
+      // System 1 connects to nearby System 1 (Associations)
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+            const n1 = nodes[i];
+            const n2 = nodes[j];
+            const dx = n1.x - n2.x;
+            const dy = n1.y - n2.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 100) {
+                // S1 <-> S1 : Weak, fleeting connections
+                if (n1.type === 'sys1' && n2.type === 'sys1') {
+                    ctx.strokeStyle = `rgba(255, 99, 71, ${0.2 - dist/500})`;
+                    ctx.beginPath();
+                    ctx.moveTo(n1.x, n1.y);
+                    ctx.lineTo(n2.x, n2.y);
+                    ctx.stroke();
+                }
+                // S2 -> S1 : Control / Monitoring
+                else if (n1.type !== n2.type) {
+                     if (dist < 150) {
+                        ctx.strokeStyle = `rgba(100, 149, 237, ${0.4 - dist/375})`;
+                        ctx.beginPath();
+                        ctx.moveTo(n1.x, n1.y);
+                        ctx.lineTo(n2.x, n2.y);
+                        ctx.stroke();
+                     }
+                }
+            }
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      width = canvas.offsetWidth;
+      height = canvas.offsetHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+    });
+  }
+
+  initSystemCanvas();
+  document.addEventListener('astro:page-load', initSystemCanvas);
+</script>

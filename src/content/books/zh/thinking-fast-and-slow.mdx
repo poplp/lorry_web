@@ -1,0 +1,27 @@
+---
+title: '思考，快与慢'
+author: '丹尼尔·卡尼曼'
+description: '关于人类思维机制的经典之作，深入探讨了驱动我们思考的两个系统。'
+pubDate: 2026-01-21
+coverImage: 'https://images.unsplash.com/photo-1555449372-525af0a19fb4?auto=format&fit=crop&q=80&w=600'
+coreIdea: '大脑通过两个系统运作：系统1（快、直觉、情绪化）和系统2（慢、理性、逻辑化）。理解两者的相互作用是做出更好决策的关键。'
+quotes:
+  - "生活中没有什么是你认为的那么重要，除了当你思考它的时候。"
+  - "我们对显而易见的事物视而不见，而且我们对自己的视而不见也视而不见。"
+  - "智力不仅是推理的能力，也是在记忆中寻找相关材料并在需要时调用注意力的能力。"
+practicalGuidance:
+  society: '识别“助推”和框架效应。政策设计可以引导直觉性的系统1做出更好的选择，而无需限制自由。'
+  learning: '认知放松（熟悉感）不等于真理。要真正学习，必须通过刻意的、往往是不舒适的努力来激活系统2。'
+  work: '使用“事前验尸”技巧：在做重大决策前，想象一年后它失败了，并写下失败的历史。这能强迫系统2克服乐观偏差。'
+---
+import SystemThinkingCanvas from '../../../components/SystemThinkingCanvas.astro';
+
+<div class="w-full h-full min-h-[350px] bg-slate-50 rounded-xl overflow-hidden relative">
+    <div class="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-red-500 shadow-sm">
+        系统 1：快思考 (直觉)
+    </div>
+    <div class="absolute bottom-4 right-4 z-10 bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-blue-600 shadow-sm">
+        系统 2：慢思考 (理性)
+    </div>
+    <SystemThinkingCanvas />
+</div>
