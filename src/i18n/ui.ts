@@ -8,9 +8,10 @@ export const defaultLang = 'en';
 export const ui = {
   en: {
     'nav.home': 'Home',
-    'nav.blog': 'Knowledge Base',
-    'nav.products': 'Products',
+    'nav.blog': 'Blog',
+    'nav.books': 'Reading',
     'nav.services': 'Services',
+    'nav.about': 'About me',
     'nav.contact': 'Connect',
     
     'hero.hi': 'Hi, I am',
@@ -28,6 +29,7 @@ export const ui = {
   zh: {
     'nav.home': '首页',
     'nav.blog': '博客',
+    'nav.books': '读书',
     'nav.services': '服务',
     'nav.products': '作品',
     'nav.about': '关于我',

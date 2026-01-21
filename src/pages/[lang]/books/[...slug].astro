@@ -1,0 +1,118 @@
+---
+import { type CollectionEntry, getCollection } from 'astro:content';
+import Layout from '../../../layouts/Layout.astro';
+import { useTranslations } from '../../../i18n/utils';
+
+export async function getStaticPaths() {
+  const books = await getCollection('books');
+  return books.map((book) => {
+    const [lang, ...slugParts] = book.slug.split('/');
+    const slug = slugParts.join('/');
+    return {
+      params: { lang, slug },
+      props: { book },
+    };
+  });
+}
+
+interface Props {
+  book: CollectionEntry<'books'>;
+}
+
+const { book } = Astro.props;
+const { lang } = Astro.params;
+const { Content } = await book.render();
+const t = useTranslations(lang as any);
+
+const otherLang = lang === 'en' ? 'zh' : 'en';
+const slugName = book.slug.split('/').slice(1).join('/');
+const allBooks = await getCollection('books');
+const translatedBook = allBooks.find(p => p.slug === `${otherLang}/${slugName}`);
+---
+
+<Layout title={`${book.data.title} | ${t('nav.books')}`} lang={lang}>
+    <nav class="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
+		<div class="text-2xl font-bold flex items-center gap-2">
+			<a href={`/${lang}`} class="text-slate-900 no-underline">P.</a>
+		</div>
+        <div class="flex items-center gap-8 text-sm font-medium text-slate-600">
+            <a href={`/${lang}`} class="hover:text-primary transition-colors">{t('nav.home')}</a>
+            <a href={`/${lang}/books`} class="hover:text-primary transition-colors">{t('nav.books')}</a>
+            {translatedBook && (
+                <a href={`/${otherLang}/books/${slugName}`} class="text-xs bg-slate-100 px-3 py-1 rounded-full hover:bg-slate-200 transition-colors">
+                    {lang === 'en' ? '中文' : 'English'}
+                </a>
+            )}
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-8 py-12">
+        <!-- Header -->
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-4">{book.data.title}</h1>
+            <p class="text-xl text-slate-500">by {book.data.author}</p>
+        </header>
+
+        <!-- Core Idea -->
+        <section class="mb-16 bg-blue-50/50 p-8 rounded-2xl border border-blue-100">
+            <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <span class="text-3xl">💡</span> {lang === 'en' ? 'Core Idea' : '核心思想'}
+            </h2>
+            <p class="text-lg text-slate-700 leading-relaxed font-medium">
+                {book.data.coreIdea}
+            </p>
+        </section>
+
+        <!-- Canvas Visualization Area -->
+        <section class="mb-16">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                <span class="text-3xl">🎨</span> {lang === 'en' ? 'Visual Interpretation' : '视觉解读'}
+            </h2>
+            <div class="w-full aspect-square md:aspect-video bg-slate-900 rounded-2xl shadow-2xl overflow-hidden relative">
+                 <!-- MDX Content will be rendered here, which can include the Canvas Component -->
+                 <div class="prose prose-invert max-w-none p-4">
+                    <Content />
+                 </div>
+            </div>
+            <p class="text-sm text-slate-500 mt-2 text-center">
+                {lang === 'en' ? 'Interactive Canvas Animation' : '交互式 Canvas 动画演示'}
+            </p>
+        </section>
+
+        <!-- Practical Guidance -->
+        <section class="mb-16 grid md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <h3 class="font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    🌍 {lang === 'en' ? 'Society' : '社会实践'}
+                </h3>
+                <p class="text-slate-600 text-sm leading-relaxed">{book.data.practicalGuidance.society}</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <h3 class="font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    🎓 {lang === 'en' ? 'Learning' : '学习应用'}
+                </h3>
+                <p class="text-slate-600 text-sm leading-relaxed">{book.data.practicalGuidance.learning}</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <h3 class="font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    💼 {lang === 'en' ? 'Work' : '工作指导'}
+                </h3>
+                <p class="text-slate-600 text-sm leading-relaxed">{book.data.practicalGuidance.work}</p>
+            </div>
+        </section>
+
+        <!-- Golden Quotes -->
+        <section class="mb-16">
+            <h2 class="text-2xl font-bold text-slate-900 mb-8 text-center">
+                {lang === 'en' ? 'Golden Quotes' : '书中金句'}
+            </h2>
+            <div class="space-y-6">
+                {book.data.quotes.map(quote => (
+                    <blockquote class="bg-slate-50 border-l-4 border-primary p-6 rounded-r-xl italic text-slate-700 text-lg">
+                        "{quote}"
+                    </blockquote>
+                ))}
+            </div>
+        </section>
+    </main>
+</Layout>

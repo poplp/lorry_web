@@ -1,0 +1,68 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+import { useTranslations } from '../../i18n/utils';
+
+export async function getStaticPaths() {
+  return [
+    { params: { lang: 'en' } },
+    { params: { lang: 'zh' } },
+  ];
+}
+
+const { lang } = Astro.params;
+const t = useTranslations(lang as any);
+const allBooks = await getCollection('books');
+// Filter books by language (assuming slug starts with lang)
+const books = allBooks.filter(book => book.slug.startsWith(`${lang}/`)).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+---
+
+<Layout title={`Books | ${t('hero.role')}`} lang={lang}>
+    <nav class="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
+		<div class="text-2xl font-bold flex items-center gap-2">
+			<a href={`/${lang}`} class="text-slate-900 no-underline">P.</a>
+		</div>
+        <div class="flex items-center gap-8 text-sm font-medium text-slate-600">
+            <a href={`/${lang}`} class="hover:text-primary transition-colors">{t('nav.home')}</a>
+            <a href={`/${lang}/blog`} class="hover:text-primary transition-colors">{t('nav.blog')}</a>
+            <a href={`/${lang}/books`} class="text-slate-900 font-semibold">{t('nav.books')}</a>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-8 py-12">
+        <h1 class="text-4xl font-bold text-slate-900 mb-4">{t('nav.books')}</h1>
+        <p class="text-slate-500 mb-12 text-lg">
+            {lang === 'en' ? 'Deep dives into books that shaped my thinking.' : '深入解读那些塑造我认知的书籍。'}
+        </p>
+
+        <div class="grid gap-12">
+            {books.map((book) => (
+                <article class="flex flex-col md:flex-row gap-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <div class="w-full md:w-48 aspect-[2/3] bg-slate-200 rounded-lg flex-shrink-0 overflow-hidden">
+                        {book.data.coverImage ? (
+                            <img src={book.data.coverImage} alt={book.data.title} class="w-full h-full object-cover" />
+                        ) : (
+                            <div class="w-full h-full flex items-center justify-center text-slate-400">No Cover</div>
+                        )}
+                    </div>
+                    <div class="flex-1 flex flex-col justify-center">
+                        <h2 class="text-2xl font-bold text-slate-900 mb-2">
+                            <a href={`/${lang}/books/${book.slug.split('/').slice(1).join('/')}`} class="hover:text-primary transition-colors">
+                                {book.data.title}
+                            </a>
+                        </h2>
+                        <p class="text-slate-500 font-medium mb-4">by {book.data.author}</p>
+                        <p class="text-slate-600 mb-6 line-clamp-3">{book.data.description}</p>
+                        <div class="flex items-center gap-4">
+                            <a href={`/${lang}/books/${book.slug.split('/').slice(1).join('/')}`} class="text-primary font-medium hover:underline">
+                                {lang === 'en' ? 'Read Interpretation' : '阅读深度解读'} &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            ))}
+        </div>
+    </main>
+</Layout>
