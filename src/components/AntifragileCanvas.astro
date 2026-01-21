@@ -1,69 +1,6 @@
 ---
-interface Props {
-  lang?: 'zh' | 'en';
-}
-
-const { lang = 'zh' } = Astro.props;
-
-const translations = {
-  zh: {
-    fragile: {
-      title: "🔴 脆弱 (Fragile)",
-      desc: "表现为一个红色方块（带有易碎图标）。",
-      reactionLabel: "反应",
-      reaction: "当重物砸中时，它会直接碎裂成碎片。",
-      metaphorLabel: "隐喻",
-      metaphor: "压力导致系统崩溃。"
-    },
-    robust: {
-      title: "⚪ 强韧 (Robust)",
-      desc: "表现为一个厚重的灰色半圆（岩石/铁盾）。",
-      reactionLabel: "反应",
-      reaction: "当重物砸中时，它仅仅是震动一下，毫发无伤。",
-      metaphorLabel: "隐喻",
-      metaphor: "压力无法撼动系统，但系统也没有从中获益。"
-    },
-    antifragile: {
-      title: "🟢 反脆弱 (Antifragile)",
-      desc: "表现为一个绿色的有机体（类似细胞或史莱姆）。",
-      reactionLabel: "反应",
-      reaction: "当重物砸中时，它不仅没被压扁，反而吸收了重物，体积变得更大、更明亮。",
-      metaphorLabel: "隐喻",
-      metaphor: "从压力和混乱中汲取能量，实现进化与增长。"
-    }
-  },
-  en: {
-    fragile: {
-      title: "🔴 Fragile",
-      desc: "Represented as a red square (with a fragile icon).",
-      reactionLabel: "Reaction",
-      reaction: "When hit by a weight, it shatters into pieces immediately.",
-      metaphorLabel: "Metaphor",
-      metaphor: "Stress causes system collapse."
-    },
-    robust: {
-      title: "⚪ Robust",
-      desc: "Represented as a heavy gray semicircle (rock/shield).",
-      reactionLabel: "Reaction",
-      reaction: "When hit by a weight, it only vibrates slightly, remaining unharmed.",
-      metaphorLabel: "Metaphor",
-      metaphor: "Stress cannot shake the system, but the system gains nothing from it."
-    },
-    antifragile: {
-      title: "🟢 Antifragile",
-      desc: "Represented as a green organism (like a cell or slime).",
-      reactionLabel: "Reaction",
-      reaction: "When hit by a weight, it is not crushed but absorbs the weight, becoming larger and brighter.",
-      metaphorLabel: "Metaphor",
-      metaphor: "Gains energy from stress and chaos, achieving evolution and growth."
-    }
-  }
-};
-
-const t = translations[lang];
 ---
 
-<div class="flex flex-col gap-6 w-full">
 <div class="relative w-full aspect-[4/3] md:aspect-video bg-slate-900 rounded-xl overflow-hidden shadow-2xl border border-slate-800">
   <canvas id="antifragile-canvas" class="w-full h-full block"></canvas>
   
@@ -92,47 +29,6 @@ const t = translations[lang];
           <div class="text-emerald-400/50 text-xs mt-1">Gains from stress</div>
       </div>
   </div>
-</div>
-
-<!-- Legend -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-600 dark:text-slate-300">
-  <!-- Fragile -->
-  <div class="bg-slate-100 dark:bg-slate-800/50 p-4 rounded-lg border border-red-200 dark:border-red-900/30">
-      <h4 class="font-bold text-red-600 dark:text-red-400 mb-2 text-base">{t.fragile.title}</h4>
-      <p class="mb-2 text-slate-500 dark:text-slate-400">{t.fragile.desc}</p>
-      <div class="mb-2">
-        <span class="text-slate-700 dark:text-slate-200 font-semibold">{t.fragile.reactionLabel}：</span>
-        <span>{t.fragile.reaction}</span>
-      </div>
-       <div class="italic text-slate-500">
-        <span class="font-medium">{t.fragile.metaphorLabel}：</span>{t.fragile.metaphor}
-       </div>
-  </div>
-  <!-- Robust -->
-  <div class="bg-slate-100 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700/50">
-      <h4 class="font-bold text-slate-600 dark:text-slate-300 mb-2 text-base">{t.robust.title}</h4>
-      <p class="mb-2 text-slate-500 dark:text-slate-400">{t.robust.desc}</p>
-      <div class="mb-2">
-        <span class="text-slate-700 dark:text-slate-200 font-semibold">{t.robust.reactionLabel}：</span>
-        <span>{t.robust.reaction}</span>
-      </div>
-       <div class="italic text-slate-500">
-        <span class="font-medium">{t.robust.metaphorLabel}：</span>{t.robust.metaphor}
-       </div>
-  </div>
-  <!-- Antifragile -->
-  <div class="bg-slate-100 dark:bg-slate-800/50 p-4 rounded-lg border border-emerald-200 dark:border-emerald-900/30">
-      <h4 class="font-bold text-emerald-600 dark:text-emerald-400 mb-2 text-base">{t.antifragile.title}</h4>
-      <p class="mb-2 text-slate-500 dark:text-slate-400">{t.antifragile.desc}</p>
-      <div class="mb-2">
-        <span class="text-slate-700 dark:text-slate-200 font-semibold">{t.antifragile.reactionLabel}：</span>
-        <span>{t.antifragile.reaction}</span>
-      </div>
-       <div class="italic text-slate-500">
-        <span class="font-medium">{t.antifragile.metaphorLabel}：</span>{t.antifragile.metaphor}
-       </div>
-  </div>
-</div>
 </div>
 
 <script is:inline>

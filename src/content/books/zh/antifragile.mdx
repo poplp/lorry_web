@@ -17,7 +17,9 @@ quotes:
 ---
 
 import AntifragileCanvas from '../../../components/AntifragileCanvas.astro';
+import AntifragileLegend from '../../../components/AntifragileLegend.astro';
 
-<div class="w-full h-full min-h-[400px]">
-  <AntifragileCanvas lang="zh" />
+<div class="flex flex-col gap-6 w-full h-full min-h-[400px]">
+  <AntifragileCanvas />
+  <AntifragileLegend lang="zh" />
 </div>
