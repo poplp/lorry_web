@@ -8,6 +8,7 @@ export const defaultLang = 'en';
 export const ui = {
   en: {
     'nav.home': 'Home',
+    'nav.products': 'Works',
     'nav.blog': 'Blog',
     'nav.books': 'Reading',
     'nav.services': 'Services',
