@@ -1,13 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { useTranslations, type ui } from '../i18n/utils';
-import { languages } from '../i18n/ui';
+import { useTranslations } from '../i18n/utils';
+import { ui, languages } from '../i18n/ui';
 
 interface Props {
   lang: keyof typeof ui;
 }
 
-const { lang } = Astro.props;
+const { lang } = Astro.props as Props;
 const t = useTranslations(lang);
 
 const otherLang = lang === 'en' ? 'zh' : 'en';
@@ -75,10 +75,9 @@ const socialLinks = [
     { name: 'TikTok', icon: icons.tiktok, color: 'hover:text-pink-500' },
     { name: 'YouTube', icon: icons.youtube, color: 'hover:text-red-500' },
     { name: 'Instagram', icon: icons.instagram, color: 'hover:text-pink-600' },
-    // Placeholders for CN social media
     { name: 'Douyin', text: '抖音', color: 'hover:bg-slate-800' },
     { name: 'RedNote', text: '小红书', color: 'hover:bg-red-500/20 hover:text-red-500' },
-    { name: 'Kuaishou', text: '快手', color: 'hover:bg-orange-500/20 hover:text-orange-500' },
+    { name: 'Kuaishou', text: '快手', color: 'hover:bg-orange-500/20 hover:text-orange-500' }
 ];
 
 ---
@@ -106,8 +105,52 @@ const socialLinks = [
             <a href="#contact" class="bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
                 {t('btn.connect')}
             </a>
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden text-slate-900 focus:outline-none p-2 ml-2" aria-label="Toggle menu">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
         </div>
 	</nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="fixed inset-0 bg-white z-50 hidden flex-col pt-24 px-8 md:hidden transition-all duration-300">
+        <button id="close-menu-btn" class="absolute top-6 right-8 text-slate-900 focus:outline-none p-2" aria-label="Close menu">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <div class="flex flex-col gap-8 text-xl font-medium text-slate-600 items-center">
+            <a href={homeLink} class="text-slate-900 font-semibold mobile-link">{t('nav.home')}</a>
+            <a href="#products" class="hover:text-primary transition-colors mobile-link">{t('nav.products')}</a>
+            <a href="#services" class="hover:text-primary transition-colors mobile-link">{t('nav.services')}</a>
+            <a href={`/${lang}/blog`} class="hover:text-primary transition-colors mobile-link">{t('nav.blog')}</a>
+            <a href="#contact" class="hover:text-primary transition-colors mobile-link">{t('nav.contact')}</a>
+        </div>
+    </div>
+
+    <script>
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const closeMenuBtn = document.getElementById('close-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileLinks = document.querySelectorAll('.mobile-link');
+
+        function toggleMenu() {
+            if (mobileMenu) {
+                mobileMenu.classList.toggle('hidden');
+                mobileMenu.classList.toggle('flex');
+                document.body.classList.toggle('overflow-hidden');
+            }
+        }
+
+        mobileMenuBtn?.addEventListener('click', toggleMenu);
+        closeMenuBtn?.addEventListener('click', toggleMenu);
+        
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', toggleMenu);
+        });
+    </script>
 
 	<!-- Hero Section -->
 	<main class="max-w-7xl mx-auto px-8 pt-12 md:pt-24 flex flex-col md:flex-row items-center gap-12 mb-24">
