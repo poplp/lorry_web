@@ -1,0 +1,174 @@
+<canvas id="compound-effect-canvas" class="w-full h-full block bg-slate-50"></canvas>
+
+<script is:inline>
+  (function() {
+    console.log("CompoundEffectCanvas script loaded");
+
+    let animationFrameId;
+    let resizeHandler;
+
+    function initCompoundCanvas() {
+      console.log("CompoundEffectCanvas: Initializing...");
+      const canvas = document.getElementById('compound-effect-canvas');
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      let width = canvas.offsetWidth;
+      let height = canvas.offsetHeight;
+      
+      // Retry if size is 0
+      if (width === 0 || height === 0) {
+          setTimeout(initCompoundCanvas, 100);
+          return;
+      }
+
+      const dpr = window.devicePixelRatio || 1;
+      
+      function setSize() {
+          width = canvas.offsetWidth;
+          height = canvas.offsetHeight;
+          canvas.width = width * dpr;
+          canvas.height = height * dpr;
+          ctx.scale(dpr, dpr);
+      }
+      setSize();
+
+      // --- Animation Logic ---
+      // Graph coordinates
+      const padding = 40;
+      const rightPadding = 140; // More space for labels
+      const startX = padding;
+      const endX = width - rightPadding;
+      const startY = height / 2; // Start from middle
+      const duration = 400; // Frames for full loop
+      let frame = 0;
+
+      // Paths data
+      const paths = [
+          { name: 'Consistency', color: '#10b981', base: 1.01, label: 'Small Smart Choices' }, // Green (Growth)
+          { name: 'Status Quo', color: '#94a3b8', base: 1.00, label: 'No Change' },       // Gray (Flat)
+          { name: 'Decline',     color: '#ef4444', base: 0.99, label: 'Small Poor Choices' }  // Red (Decay)
+      ];
+      
+      const MAX_STEPS = 150; // Simulation steps
+
+      function easeOutCubic(x) {
+          return 1 - Math.pow(1 - x, 3);
+      }
+
+      function animate() {
+          if (!ctx) return;
+          ctx.clearRect(0, 0, width, height);
+
+          // Draw Grid/Axes
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          // Y-Axis
+          ctx.moveTo(startX, padding);
+          ctx.lineTo(startX, height - padding);
+          // X-Axis (Middle)
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, startY);
+          ctx.stroke();
+
+          // Axis Labels
+          ctx.font = '10px sans-serif';
+          ctx.fillStyle = '#94a3b8';
+          ctx.textAlign = 'center';
+          ctx.fillText('TIME', (startX + endX) / 2, startY + 20);
+          ctx.textAlign = 'right';
+          ctx.fillText('RESULTS', startX - 10, startY + 4);
+
+          const yScale = height / 8; // Adjust scale to fit screen
+
+          // Draw Static Path Labels (Always visible)
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          
+          paths.forEach(path => {
+              const val = Math.pow(path.base, MAX_STEPS);
+              const yOffset = (val - 1) * yScale;
+              const y = startY - yOffset;
+              
+              ctx.fillStyle = path.color;
+              ctx.fillText(path.label, endX + 10, y);
+          });
+
+          // Draw Paths
+          const progress = Math.min(frame / (duration * 0.8), 1); // Animation progress
+          const currentX = startX + (endX - startX) * progress;
+
+          paths.forEach(path => {
+              ctx.beginPath();
+              ctx.strokeStyle = path.color;
+              ctx.lineWidth = 3;
+              ctx.moveTo(startX, startY);
+
+              // Calculate curve points
+              for (let x = startX; x <= currentX; x += 2) {
+                  const t = (x - startX) / (endX - startX); // 0 to 1
+                  const timeSteps = t * MAX_STEPS;
+                  
+                  // Exponential formula: Result = Base ^ Time
+                  const val = Math.pow(path.base, timeSteps);
+                  
+                  // Map value to Y pixel
+                  const yOffset = (val - 1) * yScale; 
+                  const y = startY - yOffset;
+
+                  ctx.lineTo(x, y);
+              }
+              ctx.stroke();
+
+              // Draw Dot at tip
+              if (progress > 0.01) {
+                  const t = (currentX - startX) / (endX - startX);
+                  const timeSteps = t * MAX_STEPS;
+                  const val = Math.pow(path.base, timeSteps);
+                  const yOffset = (val - 1) * yScale;
+                  const y = startY - yOffset;
+
+                  ctx.fillStyle = path.color;
+                  ctx.beginPath();
+                  ctx.arc(currentX, y, 4, 0, Math.PI * 2);
+                  ctx.fill();
+              }
+          });
+
+          // Loop logic
+          frame++;
+          if (frame > duration + 100) { // Pause at end
+              frame = 0; // Restart
+          }
+
+          animationFrameId = requestAnimationFrame(animate);
+      }
+
+      // Start
+      animate();
+      console.log("CompoundEffectCanvas: Animation started");
+
+      // Resize
+      if (resizeHandler) window.removeEventListener('resize', resizeHandler);
+      resizeHandler = () => setSize();
+      window.addEventListener('resize', resizeHandler);
+    }
+
+    // Initialize
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCompoundCanvas);
+    } else {
+        initCompoundCanvas();
+    }
+    
+    // Astro View Transitions support
+    document.addEventListener('astro:page-load', () => {
+        initCompoundCanvas();
+    });
+
+  })();
+</script>

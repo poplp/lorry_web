@@ -1,156 +1,233 @@
-<canvas id="system-thinking-canvas" class="w-full h-full block"></canvas>
+<canvas id="system-thinking-canvas" class="w-full h-full block bg-slate-50"></canvas>
 
-<script>
-  function initSystemCanvas() {
-    const canvas = document.getElementById('system-thinking-canvas') as HTMLCanvasElement;
-    if (!canvas) return;
+<script is:inline>
+  (function() {
+    console.log("SystemThinkingCanvas script loaded");
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    let animationFrameId;
+    let resizeHandler;
 
-    let width = canvas.offsetWidth;
-    let height = canvas.offsetHeight;
-    
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.scale(dpr, dpr);
-
-    // Node Types
-    // System 1: Fast, Intuitive (Small, Fast, Erratic, Warm Colors)
-    // System 2: Slow, Analytical (Large, Slow, Linear, Cool Colors)
-
-    class Node {
-        x: number;
-        y: number;
-        vx: number;
-        vy: number;
-        r: number;
-        type: 'sys1' | 'sys2';
-        color: string;
-        pulse: number;
-
-        constructor(type: 'sys1' | 'sys2') {
-            this.type = type;
-            this.x = Math.random() * width;
-            this.y = Math.random() * height;
-            
-            if (type === 'sys1') {
-                this.r = Math.random() * 3 + 2; // Small
-                this.vx = (Math.random() - 0.5) * 4; // Fast
-                this.vy = (Math.random() - 0.5) * 4;
-                this.color = `rgba(255, 99, 71, 0.7)`; // Tomato Red
-            } else {
-                this.r = Math.random() * 10 + 10; // Large
-                this.vx = (Math.random() - 0.5) * 0.5; // Slow
-                this.vy = (Math.random() - 0.5) * 0.5;
-                this.color = `rgba(65, 105, 225, 0.6)`; // Royal Blue
-            }
-            this.pulse = 0;
-        }
-
-        update() {
-            this.x += this.vx;
-            this.y += this.vy;
-
-            // Bounce
-            if (this.x < 0 || this.x > width) this.vx *= -1;
-            if (this.y < 0 || this.y > height) this.vy *= -1;
-
-            // System 1 erratic behavior
-            if (this.type === 'sys1' && Math.random() < 0.05) {
-                this.vx += (Math.random() - 0.5) * 2;
-                this.vy += (Math.random() - 0.5) * 2;
-                // Clamp speed
-                const speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
-                if (speed > 5) { this.vx *= 0.8; this.vy *= 0.8; }
-            }
-
-            // Pulse effect
-            this.pulse += 0.05;
-        }
-
-        draw(ctx: CanvasRenderingContext2D) {
-            ctx.beginPath();
-            const pulsingR = this.r + Math.sin(this.pulse) * (this.type === 'sys1' ? 1 : 2);
-            ctx.arc(this.x, this.y, Math.max(0, pulsingR), 0, Math.PI * 2);
-            ctx.fillStyle = this.color;
-            ctx.fill();
-            
-            // Label for System 2
-            if (this.type === 'sys2') {
-                ctx.fillStyle = 'white';
-                ctx.font = '10px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('Sys 2', this.x, this.y);
-            }
-        }
-    }
-
-    const nodes: Node[] = [];
-    // Create nodes
-    for (let i = 0; i < 40; i++) nodes.push(new Node('sys1')); // Many System 1
-    for (let i = 0; i < 5; i++) nodes.push(new Node('sys2'));  // Few System 2
-
-    function animate() {
-      if (!ctx) return;
-      ctx.clearRect(0, 0, width, height);
-      
-      // Update and Draw Nodes
-      nodes.forEach(node => {
-        node.update();
-        node.draw(ctx);
-      });
-
-      // Draw Connections
-      // System 1 connects to nearby System 1 (Associations)
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-            const n1 = nodes[i];
-            const n2 = nodes[j];
-            const dx = n1.x - n2.x;
-            const dy = n1.y - n2.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist < 100) {
-                // S1 <-> S1 : Weak, fleeting connections
-                if (n1.type === 'sys1' && n2.type === 'sys1') {
-                    ctx.strokeStyle = `rgba(255, 99, 71, ${0.2 - dist/500})`;
-                    ctx.beginPath();
-                    ctx.moveTo(n1.x, n1.y);
-                    ctx.lineTo(n2.x, n2.y);
-                    ctx.stroke();
-                }
-                // S2 -> S1 : Control / Monitoring
-                else if (n1.type !== n2.type) {
-                     if (dist < 150) {
-                        ctx.strokeStyle = `rgba(100, 149, 237, ${0.4 - dist/375})`;
-                        ctx.beginPath();
-                        ctx.moveTo(n1.x, n1.y);
-                        ctx.lineTo(n2.x, n2.y);
-                        ctx.stroke();
-                     }
-                }
-            }
-        }
+    function initSystemCanvas() {
+      console.log("SystemThinkingCanvas: Initializing...");
+      const canvas = document.getElementById('system-thinking-canvas');
+      if (!canvas) {
+        // Only log if we expect it to be here (it might be on another page if this script is global, but here it is component scoped)
+        // actually with is:inline it runs everywhere the component is included.
+        return; 
       }
 
-      requestAnimationFrame(animate);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      let width = canvas.offsetWidth;
+      let height = canvas.offsetHeight;
+      
+      // Retry if size is 0
+      if (width === 0 || height === 0) {
+          setTimeout(initSystemCanvas, 100);
+          return;
+      }
+
+      const dpr = window.devicePixelRatio || 1;
+      
+      function setSize() {
+          width = canvas.offsetWidth;
+          height = canvas.offsetHeight;
+          canvas.width = width * dpr;
+          canvas.height = height * dpr;
+          ctx.scale(dpr, dpr);
+      }
+      setSize();
+
+      // --- Animation Constants ---
+      const SYS1_HEIGHT_RATIO = 0.6; // Top 60% is System 1
+      const COLOR_SYS1 = '#ef4444'; // Red-500 (Fast/Hot)
+      const COLOR_SYS2 = '#2563eb'; // Blue-600 (Slow/Cool)
+      
+      class Particle {
+          constructor() {
+              this.reset();
+          }
+
+          reset() {
+              this.x = -20; // Start off-screen left
+              this.y = Math.random() * (height * SYS1_HEIGHT_RATIO);
+              this.r = Math.random() * 2 + 2; // Size
+              this.speed = Math.random() * 2 + 3; // Fast
+              this.system = 1; // Default to System 1
+              this.processingTime = 0;
+              this.maxProcessingTime = 0;
+              this.angle = 0;
+              
+              // 15% chance to be a "Complex" thought that needs System 2
+              this.isComplex = Math.random() < 0.15;
+              this.targetY = null;
+          }
+
+          update() {
+              // --- System 1 Behavior (Fast, Intuitive) ---
+              if (this.system === 1) {
+                  this.x += this.speed;
+                  
+                  // Simple wavy motion
+                  this.y += Math.sin(this.x * 0.05) * 0.5;
+
+                  // If complex and in the "trigger zone" (middle of screen), switch to System 2
+                  if (this.isComplex && this.x > width * 0.3 && !this.targetY) {
+                      this.system = 'transition';
+                      this.targetY = height * SYS1_HEIGHT_RATIO + Math.random() * (height * (1 - SYS1_HEIGHT_RATIO) - 20) + 10;
+                      this.vx = 1; // Slow forward
+                      this.vy = (this.targetY - this.y) / 50; // Move down slowly
+                  }
+                  
+                  // Reset if off-screen right
+                  if (this.x > width + 20) {
+                      this.reset();
+                  }
+              }
+              
+              // --- Transitioning to System 2 ---
+              else if (this.system === 'transition') {
+                  this.x += this.vx;
+                  this.y += this.vy;
+                  
+                  // Change color gradually (visualized in draw)
+                  
+                  // Arrived at System 2 Zone
+                  if (Math.abs(this.y - this.targetY) < 5) {
+                      this.system = 2;
+                      this.processingTime = 0;
+                      this.maxProcessingTime = 100 + Math.random() * 100; // 1.5 - 3 seconds
+                  }
+              }
+
+              // --- System 2 Behavior (Slow, Deliberate) ---
+              else if (this.system === 2) {
+                  // "Processing" - stay mostly still, maybe pulse or spin
+                  this.processingTime++;
+                  
+                  // Finished processing?
+                  if (this.processingTime > this.maxProcessingTime) {
+                      this.x += 2; // Move out
+                      if (this.x > width + 20) this.reset();
+                  } else {
+                      // Processing animation
+                      this.angle += 0.05;
+                  }
+              }
+          }
+
+          draw(ctx) {
+              ctx.save();
+              
+              if (this.system === 1) {
+                  ctx.fillStyle = COLOR_SYS1;
+                  ctx.beginPath();
+                  ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                  ctx.fill();
+              } 
+              else if (this.system === 'transition') {
+                  // Blending color
+                  ctx.fillStyle = '#8b5cf6'; // Purple (Mix)
+                  ctx.beginPath();
+                  ctx.arc(this.x, this.y, this.r * 1.5, 0, Math.PI * 2);
+                  ctx.fill();
+              }
+              else if (this.system === 2) {
+                  // System 2 Shape (Square/Geometric)
+                  ctx.fillStyle = COLOR_SYS2;
+                  ctx.translate(this.x, this.y);
+                  ctx.rotate(this.angle);
+                  
+                  // Pulse size
+                  const scale = 1 + Math.sin(this.processingTime * 0.1) * 0.2;
+                  const size = this.r * 2 * scale;
+                  
+                  ctx.fillRect(-size/2, -size/2, size, size);
+                  
+                  // Processing ring
+                  ctx.strokeStyle = COLOR_SYS2;
+                  ctx.lineWidth = 1;
+                  ctx.beginPath();
+                  ctx.arc(0, 0, size * 1.2, 0, Math.PI * 2); // Partial ring
+                  ctx.stroke();
+                  
+                  ctx.restore();
+              }
+              
+              ctx.restore();
+          }
+      }
+
+      const particles = [];
+      for(let i=0; i<50; i++) {
+          const p = new Particle();
+          // Distribute initial positions
+          p.x = Math.random() * width;
+          particles.push(p);
+      }
+
+      function drawBackground() {
+          // Divider Line
+          const y = height * SYS1_HEIGHT_RATIO;
+          
+          // Background Zones
+          // Sys 1 Zone (Top)
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.05)'; // Very faint red
+          ctx.fillRect(0, 0, width, y);
+          
+          // Sys 2 Zone (Bottom)
+          ctx.fillStyle = 'rgba(37, 99, 235, 0.05)'; // Very faint blue
+          ctx.fillRect(0, y, width, height - y);
+
+          // Dashed Divider
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.strokeStyle = '#cbd5e1'; // Slate 300
+          ctx.setLineDash([5, 5]);
+          ctx.stroke();
+          ctx.setLineDash([]); // Reset
+      }
+
+      function animate() {
+          if (!ctx) return;
+          ctx.clearRect(0, 0, width, height);
+          
+          drawBackground();
+          
+          particles.forEach(p => {
+              p.update();
+              p.draw(ctx);
+          });
+
+          animationFrameId = requestAnimationFrame(animate);
+      }
+
+      // Start
+      animate();
+      console.log("SystemThinkingCanvas: Animation started (Sys1/Sys2)");
+
+      // Resize
+      if (resizeHandler) window.removeEventListener('resize', resizeHandler);
+      resizeHandler = () => setSize();
+      window.addEventListener('resize', resizeHandler);
     }
 
-    animate();
-
-    window.addEventListener('resize', () => {
-      width = canvas.offsetWidth;
-      height = canvas.offsetHeight;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      ctx.scale(dpr, dpr);
+    // Initialize
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSystemCanvas);
+    } else {
+        initSystemCanvas();
+    }
+    
+    // Astro View Transitions support
+    document.addEventListener('astro:page-load', () => {
+        // Cleanup old loop if exists
+        // (Note: variable scope issues might prevent full cleanup if not handled carefully, 
+        // but re-init usually works fine if we rely on the new canvas element)
+        initSystemCanvas();
     });
-  }
 
-  initSystemCanvas();
-  document.addEventListener('astro:page-load', initSystemCanvas);
+  })();
 </script>
