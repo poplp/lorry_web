@@ -16,6 +16,7 @@ export const ui = {
     'nav.contact': 'Connect',
     
     'hero.hi': 'Hi, I am',
+    'hero.name': 'Lorry Lu',
     'hero.role': 'Tech Maker',
     'hero.desc': 'I am a Tech Maker and Explorer, leveraging AI, Big Data, and Digitalization to solve real-world complex problems and drive product innovation.',
     'btn.connect': 'Connect with me',
@@ -37,6 +38,7 @@ export const ui = {
     'nav.portfolio': '作品集',
     'nav.contact': '联系我',
     'hero.hi': '你好，我是',
+    'hero.name': '卢鹏',
     'hero.role': '技术创客',
     'hero.desc': '我是一名技术创客与探索者，善于通过 AI、大数据和数字化技术解决实际复杂问题，致力于产品创新与落地。',
     'btn.connect': '与我联系',

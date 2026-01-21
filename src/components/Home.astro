@@ -82,7 +82,7 @@ const socialLinks = [
 
 ---
 
-<Layout title={`Mahmood Fazile | ${t('hero.role')}`} lang={lang}>
+<Layout title={`${t('hero.name')} | ${t('hero.role')}`} lang={lang}>
 	<!-- Navbar -->
 	<nav class="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
 		<div class="text-2xl font-bold flex items-center gap-2">
@@ -284,6 +284,6 @@ const socialLinks = [
     </section>
 
     <footer class="py-12 bg-slate-950 text-slate-600 text-center text-sm">
-        <p>&copy; {new Date().getFullYear()} Mahmood Fazile. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} {t('hero.name')}. All rights reserved.</p>
     </footer>
 </Layout>
