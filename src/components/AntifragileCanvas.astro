@@ -42,7 +42,7 @@
                 return;
             }
 
-            // Prevent double initialization on the same element if we attach a custom property
+            // Prevent double initialization on the same element
             if (canvas._initialized) {
                 console.log("AntifragileCanvas: already initialized");
                 return;
@@ -57,14 +57,21 @@
 
             let width = canvas.width = canvas.offsetWidth;
             let height = canvas.height = canvas.offsetHeight;
-            let shockIntensity = parseInt(slider.value) / 100; // 0 to 1
+            let stressLevel = parseInt(slider.value) / 100; // 0 to 1
             let isRunning = true;
 
-            console.log("AntifragileCanvas: Setup complete, width:", width, "height:", height);
+            // Colors
+            const colors = {
+                fragile: '#ef4444', // Red-500
+                robust: '#94a3b8',  // Slate-400
+                antifragile: '#10b981', // Emerald-500
+                weight: '#f1f5f9',  // Slate-100
+                text: '#cbd5e1'     // Slate-300
+            };
 
             // Event Listener
             const onInput = (e) => {
-                shockIntensity = parseInt(e.target.value) / 100;
+                stressLevel = parseInt(e.target.value) / 100;
             };
             slider.addEventListener('input', onInput);
 
@@ -81,190 +88,177 @@
 
             // --- Game Objects ---
             
-            // 1. Fragile (Glass Cup)
-            let fragileObj = {
-                x: 0, y: 0, 
-                baseY: 0,
-                health: 100,
-                state: 'intact', // intact, cracked, broken
-                shake: 0,
-                shards: []
+            let objects = {
+                fragile: { x: 0, y: 0, w: 60, h: 60, state: 'intact', health: 1, shards: [] },
+                robust: { x: 0, y: 0, r: 35, offset: 0 },
+                antifragile: { x: 0, y: 0, r: 30, targetR: 30, pulse: 0 }
             };
 
-            // 2. Robust (Shield/Rock)
-            let robustObj = {
-                x: 0, y: 0,
-                baseY: 0,
-                shake: 0
-            };
-
-            // 3. Antifragile (Fire)
-            let antifragileObj = {
-                x: 0, y: 0,
-                baseY: 0,
-                size: 1, // Multiplier
-                particles: [],
-                targetSize: 1
-            };
-
-            let shockwaves = [];
-            let time = 0;
+            let weights = []; // Falling objects
+            let particles = []; // Effects
 
             function initObjects() {
-                const centerY = height * 0.6;
+                const centerY = height * 0.7;
                 const sectionWidth = width / 3;
 
-                fragileObj.x = sectionWidth * 0.5;
-                fragileObj.y = centerY;
-                fragileObj.baseY = centerY;
-                fragileObj.health = 100;
-                fragileObj.state = 'intact';
-                fragileObj.shards = [];
+                // Position objects in center of their 1/3 sections
+                objects.fragile.x = sectionWidth * 0.5;
+                objects.fragile.y = centerY;
+                objects.fragile.state = 'intact';
+                objects.fragile.shards = [];
 
-                robustObj.x = sectionWidth * 1.5;
-                robustObj.y = centerY;
-                robustObj.baseY = centerY;
+                objects.robust.x = sectionWidth * 1.5;
+                objects.robust.y = centerY;
 
-                antifragileObj.x = sectionWidth * 2.5;
-                antifragileObj.y = centerY;
-                antifragileObj.baseY = centerY;
-                antifragileObj.particles = [];
+                objects.antifragile.x = sectionWidth * 2.5;
+                objects.antifragile.y = centerY;
+                objects.antifragile.r = 30;
+                objects.antifragile.targetR = 30;
             }
 
             initObjects();
 
             // --- Logic ---
 
-            function spawnShockwave() {
-                // Spawn probability increases with intensity
-                if (Math.random() < 0.02 + (shockIntensity * 0.1)) {
-                    shockwaves.push({
-                        x: -50,
-                        speed: 5 + Math.random() * 5 + (shockIntensity * 10),
-                        strength: shockIntensity
+            function spawnWeight() {
+                // Spawn chance based on stress level
+                // Low stress: rare drops. High stress: rain of weights.
+                const spawnChance = 0.01 + (stressLevel * 0.08); 
+                
+                if (Math.random() < spawnChance) {
+                    // Pick a random target (0, 1, or 2)
+                    const targetIdx = Math.floor(Math.random() * 3);
+                    const sectionWidth = width / 3;
+                    const targetX = (sectionWidth * targetIdx) + (sectionWidth * 0.5);
+                    
+                    weights.push({
+                        x: targetX + (Math.random() - 0.5) * 20, // Slight variance
+                        y: -50,
+                        vy: 2 + Math.random() * 3 + (stressLevel * 5), // Faster with stress
+                        size: 15 + Math.random() * 10,
+                        target: targetIdx // 0: Fragile, 1: Robust, 2: Antifragile
                     });
                 }
             }
 
             function update() {
-                time++;
-                spawnShockwave();
+                spawnWeight();
 
-                // Update Shockwaves
-                for (let i = shockwaves.length - 1; i >= 0; i--) {
-                    let wave = shockwaves[i];
-                    wave.x += wave.speed;
+                // Update Weights
+                for (let i = weights.length - 1; i >= 0; i--) {
+                    let w = weights[i];
+                    w.y += w.vy;
 
-                    // Collision Detection & Effect Application
-                    // We define 3 zones. When wave passes center of object, apply effect.
+                    // Collision Logic
+                    const groundY = height * 0.7; // Objects sit here
                     
-                    // Fragile Zone
-                    if (Math.abs(wave.x - fragileObj.x) < wave.speed) {
-                        if (fragileObj.state !== 'broken') {
-                            fragileObj.shake = wave.strength * 20;
-                            if (wave.strength > 0.4) {
-                                fragileObj.health -= wave.strength * 40;
-                            }
-                            if (fragileObj.health <= 0) {
-                                fragileObj.state = 'broken';
+                    // Hit detection
+                    if (w.y + w.size >= groundY - 30) { // Approx top of objects
+                        let hit = false;
+                        
+                        // Check collision based on target column
+                        if (w.target === 0) { // Fragile
+                            if (objects.fragile.state === 'intact' && Math.abs(w.x - objects.fragile.x) < 40) {
+                                hit = true;
+                                objects.fragile.state = 'broken';
                                 // Create shards
-                                for(let k=0; k<12; k++) {
-                                    fragileObj.shards.push({
-                                        x: fragileObj.x,
-                                        y: fragileObj.y,
-                                        vx: (Math.random() - 0.5) * 10,
-                                        vy: (Math.random() - 1) * 10,
-                                        rot: Math.random() * Math.PI
+                                for(let k=0; k<8; k++) {
+                                    objects.fragile.shards.push({
+                                        x: objects.fragile.x,
+                                        y: objects.fragile.y - 30,
+                                        vx: (Math.random() - 0.5) * 15,
+                                        vy: (Math.random() - 1) * 15,
+                                        rot: Math.random() * 6,
+                                        vRot: (Math.random() - 0.5) * 0.5
                                     });
                                 }
-                            } else if (fragileObj.health < 60) {
-                                fragileObj.state = 'cracked';
+                                createImpactParticles(w.x, w.y, colors.fragile);
+                            }
+                        } else if (w.target === 1) { // Robust
+                            if (Math.abs(w.x - objects.robust.x) < 40) {
+                                hit = true;
+                                objects.robust.offset = 5; // Shake down
+                                // Bounce weight away? No, just destroy weight with spark
+                                createImpactParticles(w.x, w.y, colors.robust);
+                            }
+                        } else if (w.target === 2) { // Antifragile
+                            if (Math.abs(w.x - objects.antifragile.x) < objects.antifragile.r + 10) {
+                                hit = true;
+                                // Absorb!
+                                objects.antifragile.targetR = Math.min(80, objects.antifragile.targetR + 5);
+                                createImpactParticles(w.x, w.y, colors.antifragile, true); // Absorption effect
                             }
                         }
-                    }
 
-                    // Robust Zone
-                    if (Math.abs(wave.x - robustObj.x) < wave.speed) {
-                        robustObj.shake = wave.strength * 5; // Shakes less
-                    }
-
-                    // Antifragile Zone
-                    if (Math.abs(wave.x - antifragileObj.x) < wave.speed) {
-                        // Grows with stress!
-                        antifragileObj.targetSize = Math.min(2.5, antifragileObj.targetSize + (wave.strength * 0.2));
-                        // Add burst of particles
-                        for(let k=0; k<5; k++) {
-                            antifragileObj.particles.push(createFireParticle(antifragileObj.x, antifragileObj.y, antifragileObj.size));
+                        if (hit || w.y > height) {
+                            weights.splice(i, 1);
+                            continue;
                         }
-                    }
-
-                    if (wave.x > width) {
-                        shockwaves.splice(i, 1);
                     }
                 }
 
                 // Update Objects
                 
-                // Fragile
-                if (fragileObj.shake > 0) fragileObj.shake *= 0.9;
-                if (fragileObj.state === 'broken') {
-                     // Reset slowly if broken
-                     if (Math.random() < 0.005) {
-                         fragileObj.state = 'intact';
-                         fragileObj.health = 100;
-                         fragileObj.shards = [];
-                     }
-                     // Move shards
-                     fragileObj.shards.forEach(s => {
-                         s.x += s.vx;
-                         s.y += s.vy;
-                         s.vy += 0.5; // gravity
-                     });
-                }
-
-                // Robust
-                if (robustObj.shake > 0) robustObj.shake *= 0.9;
-
-                // Antifragile
-                // Decay size slowly if no stress, but minimum is 1
-                antifragileObj.targetSize = Math.max(1.0, antifragileObj.targetSize - 0.001);
-                antifragileObj.size += (antifragileObj.targetSize - antifragileObj.size) * 0.05;
-                
-                // Fire particles
-                // Always spawn some base fire
-                if (Math.random() < 0.5 * antifragileObj.size) {
-                     antifragileObj.particles.push(createFireParticle(antifragileObj.x, antifragileObj.y, antifragileObj.size));
-                }
-                
-                for (let i = antifragileObj.particles.length - 1; i >= 0; i--) {
-                    let p = antifragileObj.particles[i];
-                    p.y -= p.speedY;
-                    p.x += Math.sin(time * 0.1 + p.offset) * 0.5;
-                    p.life -= p.decay;
-                    p.size -= p.decay * 2;
-                    if (p.life <= 0 || p.size <= 0) {
-                        antifragileObj.particles.splice(i, 1);
+                // Fragile Logic
+                if (objects.fragile.state === 'broken') {
+                    // Update shards
+                    objects.fragile.shards.forEach(s => {
+                        s.x += s.vx;
+                        s.y += s.vy;
+                        s.vy += 0.8; // Gravity
+                        s.rot += s.vRot;
+                    });
+                    
+                    // Auto-repair slowly (magic)
+                    if (Math.random() < 0.005) {
+                        objects.fragile.state = 'intact';
                     }
+                }
+
+                // Robust Logic
+                if (objects.robust.offset > 0) {
+                    objects.robust.offset *= 0.8;
+                    if (objects.robust.offset < 0.1) objects.robust.offset = 0;
+                }
+
+                // Antifragile Logic
+                // Constant slow decay (entropy)
+                objects.antifragile.targetR = Math.max(30, objects.antifragile.targetR - 0.05);
+                // Smooth interpolation
+                objects.antifragile.r += (objects.antifragile.targetR - objects.antifragile.r) * 0.1;
+                objects.antifragile.pulse += 0.05;
+
+                // Update Particles
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    let p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.02;
+                    if (p.life <= 0) particles.splice(i, 1);
                 }
             }
 
-            function createFireParticle(x, y, scale) {
-                return {
-                    x: x + (Math.random() - 0.5) * 30 * scale,
-                    y: y + 20 * scale,
-                    speedY: (1 + Math.random() * 2) * scale,
-                    life: 1.0,
-                    decay: 0.01 + Math.random() * 0.02,
-                    size: (5 + Math.random() * 10) * scale,
-                    offset: Math.random() * 100,
-                    color: Math.random() > 0.5 ? '#fbbf24' : '#ef4444' // Yellow or Red
-                };
+            function createImpactParticles(x, y, color, isAbsorb = false) {
+                const count = isAbsorb ? 5 : 8;
+                for(let i=0; i<count; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = isAbsorb ? -2 : (2 + Math.random() * 3); // Suck in if absorb
+                    particles.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        color: color,
+                        life: 1.0,
+                        size: 2 + Math.random() * 3
+                    });
+                }
             }
 
             function draw() {
                 if (!ctx || !isRunning) return;
                 
-                // Check if canvas is still attached to DOM
+                // DOM Check
                 if (!document.body.contains(canvas)) {
                     isRunning = false;
                     resizeObserver.disconnect();
@@ -274,108 +268,93 @@
 
                 ctx.clearRect(0, 0, width, height);
 
-                // Draw Shockwaves
-                ctx.strokeStyle = `rgba(255, 255, 255, 0.1)`;
+                const groundY = height * 0.7;
+
+                // Draw Floor
+                ctx.strokeStyle = '#334155';
                 ctx.lineWidth = 2;
-                shockwaves.forEach(w => {
-                    ctx.beginPath();
-                    ctx.moveTo(w.x, 0);
-                    ctx.lineTo(w.x, height);
-                    ctx.stroke();
-                    
-                    // Draw "Wind" effect
-                    ctx.fillStyle = `rgba(255, 255, 255, ${w.strength * 0.3})`;
-                    ctx.fillRect(w.x - 20, 0, 40, height);
-                });
+                ctx.beginPath();
+                ctx.moveTo(0, groundY);
+                ctx.lineTo(width, groundY);
+                ctx.stroke();
 
-                // Draw Fragile (Glass)
-                if (fragileObj.state !== 'broken') {
-                    const shakeX = (Math.random() - 0.5) * fragileObj.shake;
-                    const shakeY = (Math.random() - 0.5) * fragileObj.shake;
+                // 1. Draw Fragile (Box)
+                if (objects.fragile.state === 'intact') {
+                    ctx.fillStyle = colors.fragile;
+                    ctx.fillRect(objects.fragile.x - 30, objects.fragile.y - 60, 60, 60);
                     
-                    ctx.save();
-                    ctx.translate(fragileObj.x + shakeX, fragileObj.y + shakeY);
-                    
-                    // Glass Body
-                    ctx.fillStyle = 'rgba(248, 113, 113, 0.2)'; // Red tint
-                    ctx.strokeStyle = '#f87171';
-                    ctx.lineWidth = 2;
+                    // "Fragile" Label/Icon
+                    ctx.fillStyle = 'rgba(0,0,0,0.2)';
                     ctx.beginPath();
-                    ctx.rect(-20, -30, 40, 60);
-                    ctx.fill();
+                    // Broken glass icon
+                    ctx.moveTo(objects.fragile.x - 10, objects.fragile.y - 45);
+                    ctx.lineTo(objects.fragile.x + 5, objects.fragile.y - 35);
+                    ctx.lineTo(objects.fragile.x - 5, objects.fragile.y - 25);
+                    ctx.lineTo(objects.fragile.x + 10, objects.fragile.y - 15);
                     ctx.stroke();
-
-                    // Cracks
-                    if (fragileObj.state === 'cracked') {
-                        ctx.beginPath();
-                        ctx.moveTo(-10, -20);
-                        ctx.lineTo(5, 0);
-                        ctx.lineTo(-5, 15);
-                        ctx.stroke();
-                    }
-                    ctx.restore();
                 } else {
                     // Draw Shards
-                    ctx.fillStyle = '#f87171';
-                    fragileObj.shards.forEach(s => {
+                    ctx.fillStyle = colors.fragile;
+                    objects.fragile.shards.forEach(s => {
                         ctx.save();
                         ctx.translate(s.x, s.y);
                         ctx.rotate(s.rot);
-                        ctx.fillRect(-3, -3, 6, 6);
+                        ctx.fillRect(-5, -5, 10, 10);
                         ctx.restore();
                     });
                 }
 
-                // Draw Robust (Shield)
-                const robShakeX = (Math.random() - 0.5) * robustObj.shake;
-                ctx.save();
-                ctx.translate(robustObj.x + robShakeX, robustObj.y);
-                
-                ctx.fillStyle = '#cbd5e1'; // Slate-300
+                // 2. Draw Robust (Rock)
+                ctx.fillStyle = colors.robust;
+                const rY = objects.robust.y + objects.robust.offset;
                 ctx.beginPath();
-                // Shield shape
-                ctx.moveTo(0, -30);
-                ctx.lineTo(25, -20);
-                ctx.lineTo(25, 10);
-                ctx.lineTo(0, 30);
-                ctx.lineTo(-25, 10);
-                ctx.lineTo(-25, -20);
-                ctx.closePath();
+                ctx.arc(objects.robust.x, rY - 35, 35, Math.PI, 0); // Top half circle
+                ctx.lineTo(objects.robust.x + 35, rY);
+                ctx.lineTo(objects.robust.x - 35, rY);
+                ctx.fill();
+                // Add "Iron" sheen
+                ctx.strokeStyle = '#64748b';
+                ctx.beginPath();
+                ctx.moveTo(objects.robust.x - 15, rY - 45);
+                ctx.lineTo(objects.robust.x + 15, rY - 45);
+                ctx.stroke();
+
+                // 3. Draw Antifragile (Slime/Cell)
+                ctx.fillStyle = colors.antifragile;
+                const ar = objects.antifragile.r;
+                // Wobble effect
+                const wobble = Math.sin(objects.antifragile.pulse) * 2;
+                
+                ctx.beginPath();
+                ctx.ellipse(objects.antifragile.x, objects.antifragile.y - ar + wobble, ar + wobble, ar - wobble, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Inner detail
-                ctx.strokeStyle = '#64748b';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.restore();
-
-
-                // Draw Antifragile (Fire)
-                ctx.save();
                 // Glow
-                const glowSize = 100 * antifragileObj.size;
-                const gradient = ctx.createRadialGradient(antifragileObj.x, antifragileObj.y, 0, antifragileObj.x, antifragileObj.y, glowSize);
-                gradient.addColorStop(0, 'rgba(16, 185, 129, 0.2)'); // Emerald glow
+                const gradient = ctx.createRadialGradient(objects.antifragile.x, objects.antifragile.y - ar, ar * 0.5, objects.antifragile.x, objects.antifragile.y - ar, ar * 2);
+                gradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
                 gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
                 ctx.fillStyle = gradient;
-                ctx.fillRect(antifragileObj.x - glowSize, antifragileObj.y - glowSize, glowSize * 2, glowSize * 2);
+                ctx.beginPath();
+                ctx.arc(objects.antifragile.x, objects.antifragile.y - ar, ar * 2, 0, Math.PI * 2);
+                ctx.fill();
 
-                // Particles
-                antifragileObj.particles.forEach(p => {
+                // Draw Weights
+                ctx.fillStyle = colors.weight;
+                weights.forEach(w => {
+                    ctx.beginPath();
+                    ctx.rect(w.x - w.size/2, w.y, w.size, w.size);
+                    ctx.fill();
+                });
+
+                // Draw Particles
+                particles.forEach(p => {
                     ctx.globalAlpha = p.life;
-                    ctx.fillStyle = p.color === '#ef4444' ? '#34d399' : '#10b981'; // Green fire for "Growth/Life"
+                    ctx.fillStyle = p.color;
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                     ctx.fill();
+                    ctx.globalAlpha = 1.0;
                 });
-                ctx.restore();
-                
-                // Draw floor
-                ctx.strokeStyle = '#334155';
-                ctx.beginPath();
-                ctx.moveTo(0, height * 0.6 + 40);
-                ctx.lineTo(width, height * 0.6 + 40);
-                ctx.stroke();
 
                 requestAnimationFrame(draw);
             }
@@ -384,10 +363,8 @@
             function loop() {
                 if (!isRunning) return;
                 update();
-                // Draw is self-looping via requestAnimationFrame
             }
             
-            // Start update loop
             const updateInterval = setInterval(() => {
                 if (!isRunning) {
                     clearInterval(updateInterval);
@@ -396,18 +373,15 @@
                 update();
             }, 1000/60);
 
-            // Start draw loop
             draw();
             console.log("AntifragileCanvas: Animation started");
         }
 
-        // Run when DOM is ready or view transition completes
         if (document.readyState !== 'loading') {
             initAntifragileCanvas();
         } else {
             document.addEventListener('DOMContentLoaded', initAntifragileCanvas);
         }
-        // Support Astro View Transitions if enabled in future
         document.addEventListener('astro:page-load', initAntifragileCanvas);
     })();
 </script>
